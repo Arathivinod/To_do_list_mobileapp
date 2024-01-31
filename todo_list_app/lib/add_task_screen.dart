@@ -4,9 +4,14 @@ import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import '../models/database.dart';
 
-class AddTaskScreen extends StatelessWidget {
+class AddTaskScreen extends StatefulWidget {
+  @override
+  _AddTaskScreenState createState() => _AddTaskScreenState();
+}
+
+class _AddTaskScreenState extends State<AddTaskScreen> {
   final TextEditingController _taskController = TextEditingController();
-  final TextEditingController _dueTimeController = TextEditingController();
+  DateTime? _selectedDueTime = DateTime.now();
 
   @override
   Widget build(BuildContext context) {
@@ -23,10 +28,17 @@ class AddTaskScreen extends StatelessWidget {
               controller: _taskController,
               decoration: InputDecoration(labelText: 'Task'),
             ),
-            TextField(
-              controller: _dueTimeController,
-              decoration:
-                  InputDecoration(labelText: 'Due Time (YYYY-MM-DD HH:mm)'),
+            SizedBox(height:8),
+            Row(children: [
+              Text('Due Time: ${_selectedDueTime !=null ? DateFormat('yyyy-MM-dd HH:mm').format(_selectedDueTime!) : 'Not set'}'),
+                SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () {
+                    _selectDueTime(context);
+                  },
+                  child: Text('Select Due Time'),
+                ),
+              ],
             ),
             SizedBox(height: 16),
             ElevatedButton(
@@ -40,42 +52,47 @@ class AddTaskScreen extends StatelessWidget {
       ),
     );
   }
+  Future<void> _selectDueTime(BuildContext context) async {
+    DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDueTime ?? DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2101),
+    );
+
+    if (picked != null) {
+      TimeOfDay? selectedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(_selectedDueTime ?? DateTime.now()),
+      );
+
+      if (selectedTime != null) {
+        setState(() {
+          _selectedDueTime = DateTime(picked.year, picked.month, picked.day, selectedTime.hour, selectedTime.minute);
+        });
+      }
+    }
+  }
 
  void _addTask(BuildContext context) async {
-  String taskName = _taskController.text;
-  String dueTimeString = _dueTimeController.text;
+    String taskName = _taskController.text;
 
-  if (taskName.isNotEmpty && dueTimeString.isNotEmpty) {
-    DateTime? dueTime = _parseDueTime(dueTimeString);
-
-    if (dueTime != null) {
+    if (taskName.isNotEmpty  && _selectedDueTime != null) {
       // Open the 'Tasks' box
       Box<Task> taskBox = await Hive.openBox<Task>('Tasks');
 
-      Task newTask = Task(name: taskName, dueTime: dueTime);
+      Task newTask = Task(name: taskName, dueTime: _selectedDueTime!);
 
       taskBox.add(newTask);
 
       Navigator.pop(context, newTask);
     } else {
-      // Handle invalid date format
-      _showErrorDialog(context,
-          'Invalid date format. Please enter a valid date and time.');
-    }
-  }
-}
-
-
-  DateTime _parseDueTime(String dueTimeString) {
-    try {
-      return DateFormat('yyyy-MM-dd HH:mm').parseStrict(dueTimeString);
-    } catch (e) {
-      print('Error parsing date: $e');
-      return DateTime(
-          1900); // Return a default date or use another sentinel value
+      // Handle empty task name
+      _showErrorDialog(context, 'Task name cannot be empty, and due time must be set.');
     }
   }
 
+  
   void _showErrorDialog(BuildContext context, String message) {
     showDialog(
       context: context,
@@ -86,10 +103,7 @@ class AddTaskScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(message),
-            SizedBox(height: 8),
-            Text(
-                'Please enter the date and time in the format: YYYY-MM-DD HH:mm'),
-          ],
+            ],
         ),
         actions: [
           TextButton(
