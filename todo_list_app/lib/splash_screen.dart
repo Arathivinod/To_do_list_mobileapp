@@ -31,12 +31,8 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset('assets/images/app_logo.png', width: 100.0),
+            Image.asset('assets/images/app_logo.png', width: 200.0),
             SizedBox(height: 20.0),
-            Text(
-              'To_do',
-              style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
-            ),
           ],
         ),
       ),
