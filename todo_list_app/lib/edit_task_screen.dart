@@ -1,19 +1,29 @@
 // edit_task_screen.dart
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import 'package:intl/intl.dart';
 import '../models/database.dart';
 
-class EditTaskScreen extends StatelessWidget {
-  final TextEditingController _taskController;
-  final TextEditingController _dueTimeController;
+class EditTaskScreen extends StatefulWidget {
   final Task task;
+  EditTaskScreen({required this.task});
 
-  EditTaskScreen({required this.task})
-      : _taskController = TextEditingController(text: task.name),
-        _dueTimeController = TextEditingController(
-          text:
-              "${task.dueTime.year}-${task.dueTime.month}-${task.dueTime.day} ${task.dueTime.hour}:${task.dueTime.minute}",
-        );
+  @override
+  _EditTaskScreenState createState() => _EditTaskScreenState();
+}
+
+class _EditTaskScreenState extends State<EditTaskScreen> {
+  late TextEditingController _taskController;
+  late TextEditingController _dueTimeController;
+
+  @override
+  void initState() {
+    super.initState();
+    _taskController = TextEditingController(text: widget.task.name);
+    _dueTimeController = TextEditingController(
+      text: DateFormat('yyyy-MM-dd HH:mm').format(widget.task.dueTime),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,14 +36,29 @@ class EditTaskScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextField(
+            TextFormField(
               controller: _taskController,
               decoration: InputDecoration(labelText: 'Task'),
             ),
-            TextField(
+            TextFormField(
               controller: _dueTimeController,
-              decoration:
-                  InputDecoration(labelText: 'Due Time (YYYY-MM-DD HH:mm)'),
+              decoration: InputDecoration(labelText: 'Due Time (YYYY-MM-DD HH:mm)'),
+              onTap: () async {
+                DateTime? pickedDate = await _pickDate(context, widget.task.dueTime);
+                if (pickedDate != null) {
+                  TimeOfDay? pickedTime = await _pickTime(context, widget.task.dueTime);
+                  if (pickedTime != null) {
+                    DateTime pickedDateTime = DateTime(
+                      pickedDate.year,
+                      pickedDate.month,
+                      pickedDate.day,
+                      pickedTime.hour,
+                      pickedTime.minute,
+                    );
+                    _dueTimeController.text = DateFormat('yyyy-MM-dd HH:mm').format(pickedDateTime);
+                  }
+                }
+              },
             ),
             SizedBox(height: 16),
             ElevatedButton(
@@ -48,17 +73,34 @@ class EditTaskScreen extends StatelessWidget {
     );
   }
 
-  void _editTask(BuildContext context) {
+  Future<DateTime?> _pickDate(BuildContext context, DateTime initialDate) async {
+    DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2101),
+    );
+    return pickedDate;
+  }
+
+  Future<TimeOfDay?> _pickTime(BuildContext context, DateTime initialDate) async {
+    TimeOfDay? pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(initialDate),
+    );
+    return pickedTime;
+  }
+
+  void _editTask(BuildContext context) async {
     String taskName = _taskController.text;
     String dueTimeString = _dueTimeController.text;
 
     if (taskName.isNotEmpty && dueTimeString.isNotEmpty) {
       try {
-        DateTime dueTime = DateTime.parse(dueTimeString);
-        Task editedTask =
-            Task.withKey(key: task.key, name: taskName, dueTime: dueTime);
+        DateTime dueTime = DateFormat('yyyy-MM-dd HH:mm').parseStrict(dueTimeString);
+        Task editedTask = Task.withKey(key: widget.task.key, name: taskName, dueTime: dueTime);
 
-        Box<Task> taskBox = Hive.box<Task>('tasks');
+        Box<Task> taskBox = await Hive.openBox<Task>('Tasks');
         taskBox.put(editedTask.key, editedTask);
 
         Navigator.pop(context, editedTask);
@@ -68,7 +110,7 @@ class EditTaskScreen extends StatelessWidget {
           context: context,
           builder: (context) => AlertDialog(
             title: Text('Error'),
-            content: Text('Invalid date format. Please enter a valid date.'),
+            content: Text('Invalid date format. Please enter a valid date and time.'),
             actions: [
               TextButton(
                 onPressed: () {
