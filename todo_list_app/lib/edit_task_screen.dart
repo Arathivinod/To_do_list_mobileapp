@@ -30,6 +30,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Edit Task'),
+        backgroundColor: Color.fromARGB(255, 34, 141, 235),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -61,14 +62,15 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
               },
             ),
             SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                _editTask(context);
-              },
-              child: Text('Update'),
-            ),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Color.fromARGB(255, 34, 141, 235),
+        onPressed: () {
+          _editTask(context);
+        },
+        child: Icon(Icons.check),
       ),
     );
   }

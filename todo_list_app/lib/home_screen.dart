@@ -4,8 +4,13 @@ import 'package:hive/hive.dart';
 import 'add_task_screen.dart';
 import 'edit_task_screen.dart';
 import 'models/database.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class HomeScreen extends StatefulWidget {
+  final User user;
+
+  HomeScreen({required this.user});
+
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
@@ -27,46 +32,64 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('To-Do List'),
+        title: Text('To_Do'),
+        backgroundColor: Color.fromARGB(255, 34, 141, 235), // Set the background color as needed
       ),
-      body: FutureBuilder(
-        future: _openTaskBox(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            return ListView.builder(
-              itemCount: _myBox.length,
-              itemBuilder: (context, index) {
-                Task task = _myBox.getAt(index)!;
-                return ListTile(
-                  title: Text(task.name),
-                  subtitle: Text("Due: ${_formatDueTime(task.dueTime)}"),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.edit),
-                        onPressed: () {
-                          _editTask(index);
-                        },
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.delete),
-                        onPressed: () {
-                          _myBox.deleteAt(index);
-                          setState(() {}); // Trigger a rebuild after deleting
-                        },
-                      ),
-                    ],
-                  ),
-                );
-              },
-            );
-          } else {
-            return CircularProgressIndicator();
-          }
-        },
+      body: SafeArea(
+        child: FutureBuilder(
+          future: _openTaskBox(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.done) {
+              return ListView.builder(
+                itemCount: _myBox.length,
+                itemBuilder: (context, index) {
+                  Task task = _myBox.getAt(index)!;
+                  return GestureDetector(
+                      onTap: () {
+                        _editTask(index);
+                      },
+                      child: Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(top: 10.0, left: 10.0, right: 10.0),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Color.fromARGB(255, 201, 232, 253),
+                                borderRadius: BorderRadius.circular(
+                                    6.0), // Set the radius as needed
+                              ),
+                              child: ListTile(
+                                title: Text(task.name),
+                                subtitle: Text(
+                                    "Due: ${_formatDueTime(task.dueTime)}"),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(Icons.check),
+                                      onPressed: () {
+                                        _myBox.deleteAt(index);
+                                        setState(
+                                            () {}); // Trigger a rebuild after deleting
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ));
+                },
+              );
+            } else {
+              return CircularProgressIndicator();
+            }
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton(
+        backgroundColor: Color.fromARGB(255, 34, 141, 235),
         onPressed: () {
           _navigateToAddTaskScreen();
         },

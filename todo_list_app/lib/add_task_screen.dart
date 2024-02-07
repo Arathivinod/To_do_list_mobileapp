@@ -18,6 +18,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('New Task'),
+        backgroundColor: Color.fromARGB(255, 34, 141, 235),
       ),
       body: SafeArea(
         child: Padding(
